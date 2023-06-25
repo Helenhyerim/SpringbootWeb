@@ -6,7 +6,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.zerock.guestbook.dto.GuestbookDTO;
 import org.zerock.guestbook.dto.PageRequestDTO;
 import org.zerock.guestbook.service.GuestbookService;
 
@@ -37,4 +41,61 @@ public class GuestbookController {
 
         model.addAttribute("result", service.getList(pageRequestDTO));
     }
+
+    @GetMapping("/register") // GET 방식에서는 화면을 보여줌
+    public void register(){
+        log.info("register get...");
+    }
+
+    @PostMapping("/register") // POST 방식에서는 처리 후 목록페이지로 이동
+    public String registerPost(GuestbookDTO dto, RedirectAttributes redirectAttributes){ // RedirectAttributes 를 사용해서 한번만 화면에서 msg 라는 변수를 사용하도록 처리
+        log.info("dto...." + dto);
+
+        //새로 추가된 엔티티의 번호
+        Long gno = service.register(dto);
+
+        redirectAttributes.addFlashAttribute("msg", gno); // addFlashAttribute 는 단 한번만 데이터를 전달하는 용도
+
+        return "redirect:/guestbook/list";
+    }
+
+    @GetMapping({"/read", "/modify"})
+    public void read(long gno, @ModelAttribute("requestDto") PageRequestDTO requestDTO, Model model){
+
+        log.info("gno: " + gno);
+
+        GuestbookDTO dto = service.read(gno);
+
+        model.addAttribute("dto", dto);
+        model.addAttribute("requestDTO", requestDTO);
+    }
+
+    @PostMapping("/remove")
+    public String remove(long gno, RedirectAttributes redirectAttributes){
+
+        log.info("gno: " + gno);
+
+        service.remove(gno);
+
+        redirectAttributes.addFlashAttribute("msg", gno);
+
+        return "redirect:/guestbook/list";
+    }
+
+    @PostMapping("/modify")
+    public String modify(GuestbookDTO dto, @ModelAttribute("requestDTO") PageRequestDTO requestDTO, RedirectAttributes redirectAttributes){
+
+        log.info("post modify........................... ");
+        log.info("dto" + dto);
+
+        service.modify(dto);
+
+        redirectAttributes.addAttribute("page", requestDTO.getPage());
+        redirectAttributes.addAttribute("type", requestDTO.getType());
+        redirectAttributes.addAttribute("keyword", requestDTO.getKeyword());
+        redirectAttributes.addAttribute("gno", dto.getGno());
+
+        return "redirect:/guestbook/read";
+    }
+
 }
